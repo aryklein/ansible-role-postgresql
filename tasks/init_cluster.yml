@@ -1,0 +1,8 @@
+---
+
+- name: CLUSTER_INIT: set facts
+  import_tasks: set_facts.yml
+
+- name: CLUSTER_INIT: 1
+  import_tasks: common_tasks.yml
+
