@@ -1,6 +1,6 @@
 ---
 
-- name: ensure requiered repository keys are available
+- name: COMMON TASKS | ensure requiered repository keys are available
   apt_key:
     url: {{ item }}
     state: present
@@ -8,7 +8,7 @@
     - https://www.postgresql.org/media/keys/ACCC4CF8.asc
     - https://apt.2ndquadrant.com/site/keys/9904CD4BD6BAF0C3.asc
 
-- name: ensure requiered repositories are configured
+- name: COMMON TASKS | ensure requiered repositories are configured
   apt_repository:
     repo: {{ item.repo }}
     state: present
@@ -19,16 +19,16 @@
     - repo: "deb https://apt.2ndquadrant.com/ {{ ansible_lsb.codename }}-2ndquadrant main"
       file: repmgr
 
-- name: update repositories cache and install necessary packages
-  apt:
-    name:
-      - ca-certificates
-      - postgresql-{{ pg_ver }}
-      - postgresql-contrib-{{ pg_ver }}
-      - {{ repmgr }}
-    state: present
-    update_cache: yes
-  environment:
-    # do not start services after installing them
-    RUNLEVEL: 1
+      #- name: COMMON TASKS | update repositories cache and install necessary packages
+      #  apt:
+      #    name:
+      #      - ca-certificates
+      #      - postgresql-{{ pg_ver }}
+      #      - postgresql-contrib-{{ pg_ver }}
+      #      - {{ repmgr }}
+      #    state: present
+      #    update_cache: yes
+      #  environment:
+      #    # do not start services after installing them
+      #    RUNLEVEL: 1
 

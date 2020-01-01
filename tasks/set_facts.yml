@@ -4,12 +4,12 @@
   set_fact:
     pg_node_id : "{{ 1000 | random(seed=inventory_hostname) }}"
 
-- name: set node role - replica
+- name: set node as a replica
   set_fact:
-    pg_primary: false
-  when: ansible_hostname != pg_primary 
+    pg_is_primary: false
+  when: ansible_hostname != pg_primary
 
-- name: set node role - primary
+- name: set node as a primary
   set_fact:
-    pg_primary: true
+    pg_is_primary: true
   when: ansible_hostname == pg_primary

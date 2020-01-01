@@ -1,4 +1,4 @@
 ---
 
-- name: MAIN: {{ pg_op }}
-  import_tasks: {{ pg_op }}.yml
+- name: MAIN | {{ pg_op }}
+  import_tasks: "{{ pg_op }}.yml"

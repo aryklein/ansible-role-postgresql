@@ -1,0 +1,12 @@
+- name: Test role
+  hosts: all
+  become_method: sudo
+  become: true
+
+  tasks:
+    - name: Install PostgreSQL
+      import_role:
+        name: ansible-role-postgresql
+      vars:
+        pg_primary: primary
+        pg_op: init_cluster
