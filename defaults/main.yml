@@ -6,3 +6,5 @@ pg_ver: 12
 repmgr_version:
 repmgr: "{% if repmgr_version %}repmgr={{repmgr_version}}*{% else %}repmgr{% endif %}"
 
+pg_data: "/data/postgresql/{{ pg_ver }}/main"
+pg_system_user: postgres

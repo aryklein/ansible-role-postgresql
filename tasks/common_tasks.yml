@@ -2,7 +2,7 @@
 
 - name: COMMON TASKS | ensure requiered repository keys are available
   apt_key:
-    url: {{ item }}
+    url: "{{ item }}"
     state: present
   loop:
     - https://www.postgresql.org/media/keys/ACCC4CF8.asc
@@ -10,25 +10,47 @@
 
 - name: COMMON TASKS | ensure requiered repositories are configured
   apt_repository:
-    repo: {{ item.repo }}
+    repo: "{{ item.repo }}"
     state: present
-    filename: {{ item.file }}
+    filename: "{{ item.file }}"
   loop:
     - repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_lsb.codename }}-pgdg main"
       file: postgresql
     - repo: "deb https://apt.2ndquadrant.com/ {{ ansible_lsb.codename }}-2ndquadrant main"
       file: repmgr
 
-      #- name: COMMON TASKS | update repositories cache and install necessary packages
-      #  apt:
-      #    name:
-      #      - ca-certificates
-      #      - postgresql-{{ pg_ver }}
-      #      - postgresql-contrib-{{ pg_ver }}
-      #      - {{ repmgr }}
-      #    state: present
-      #    update_cache: yes
-      #  environment:
-      #    # do not start services after installing them
-      #    RUNLEVEL: 1
+- name: COMMON TASKS | update repositories cache and install necessary packages
+  apt:
+    pkg:
+      - postgresql-{{ pg_ver }}
+      - postgresql-client-{{ pg_ver }}
+      - postgresql-{{ pg_ver }}-{{ repmgr }}
+    state: present
+    update_cache: yes
+  environment:
+    # do not start services after installing them
+    RUNLEVEL: 1
 
+- name: COMMON TASKS | create PGDATA directory if it does not exist
+  file:
+    path: "{{ pg_data }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ pg_system_user }}"
+    group: "{{ pg_system_user }}"
+
+- name: COMMON TASKS | get Postgres user home directory (1/2)
+  getent:
+    database: passwd
+    key: "{{ pg_system_user }}"
+
+- name: COMMON TASKS | get Postgres user home directory (2/2)
+  set_fact:
+    pg_user_home: "{{ getent_passwd[pg_system_user][4] }}"
+
+- name: COMMON TASKS | create SSH key-pair for passwordless ssh between nodes
+  user:
+    name: "{{ pg_system_user }}"
+    generate_ssh_key: yes
+
+- import_tasks: ssh_passwordless.yml

@@ -13,3 +13,11 @@
   set_fact:
     pg_is_primary: true
   when: ansible_hostname == pg_primary
+
+- debug:
+    msg: "{{ ansible_hostname }} -> primary node"
+  when: ansible_hostname == pg_primary
+
+- debug:
+    msg: "{{ ansible_hostname }} -> replica node"
+  when: ansible_hostname != pg_primary
