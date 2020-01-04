@@ -53,4 +53,5 @@
     name: "{{ pg_system_user }}"
     generate_ssh_key: yes
 
-- import_tasks: ssh_passwordless.yml
+- name: COMMON TASKS | import tasks from ssh_passwordless.yml file
+  import_tasks: ssh_passwordless.yml
