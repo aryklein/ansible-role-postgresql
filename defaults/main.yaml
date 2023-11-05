@@ -85,7 +85,7 @@ pg_repmgr_db_name: "{{ pg_repmgr_db_user }}"
 # The password for the cluster administrator user (== postgres). If left empty,
 # this will not be set up remotely and it will be not possible to use it from
 # another box.
-pg_admin_password: "supersecret"
+pg_admin_password: "secretpostgres"
 
 
 # =============================================================================
@@ -127,9 +127,3 @@ pg_bouncer_idle_server_conn_terminate: 60
 pg_bouncer_custom_databases: []
 pg_bouncer_ignore_startup_parameters:
   - extra_float_digits
-
-# =============================================================================
-# CLONE VARIABLES
-# =============================================================================
-clone_from_primary: true
-clone_from: "{{ pg_cluster_master_addr }}"
