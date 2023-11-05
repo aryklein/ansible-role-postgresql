@@ -1,0 +1,118 @@
+---
+
+- name: Ensure required repository keys are available
+  ansible.builtin.apt_key:
+    url: "{{ repo_key }}"
+    state: present
+  loop:
+    - https://www.postgresql.org/media/keys/ACCC4CF8.asc
+  loop_control:
+    loop_var: repo_key
+
+- name: Ensure required repositories are configured
+  ansible.builtin.apt_repository:
+    filename: "{{ item.file }}"
+    repo: "{{ item.repo }}"
+    state: present
+  loop:
+    - file: postgresql
+      repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_lsb.codename }}-pgdg main"
+
+- name: Ensure required packages are installed
+  ansible.builtin.apt:
+    name: "{{ packages }}"
+    state: present
+    update_cache: true
+    force_apt_get: true
+  vars:
+    packages:
+      - acl
+      - ca-certificates
+      - postgresql-{{ pg_version }}
+      - postgresql-contrib-{{ pg_version }}
+      - postgresql-client-{{ pg_version }}
+      - postgresql-plpython3-{{ pg_version }}
+      - python3-psycopg2
+
+- name: Ensure default extensions are installed
+  ansible.builtin.apt:
+    name: postgresql-{{ pg_version }}-{{ extension }}
+    state: present
+    update_cache: true
+    force_apt_get: true
+  loop: "{{ pg_extensions[pg_version] }}"
+  loop_control:
+    loop_var: extension
+
+- name: Stop and mask postgresql service
+  ansible.builtin.systemd:
+    name: postgresql@{{ pg_version }}-main
+    state: stopped
+    masked: true
+    enabled: false
+
+- name: Create service files
+  ansible.builtin.template:
+    src: "{{ item }}.service.j2"
+    dest: "/etc/systemd/system/{{ item }}.service"
+    mode: "0644"
+  loop:
+    - postgresql
+  notify: "daemon reload"
+
+- name: Create sudo rule to allow postgresql user to manage server
+  ansible.builtin.template:
+    src: sudoers_postgresql.j2
+    dest: "/etc/sudoers.d/99-{{ pg_system_user }}"
+    mode: "0440"
+    validate: 'visudo -cf %s'
+
+- name: Get information about postgresql server user
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ pg_system_user }}"
+  changed_when: false
+
+- name: Set home directory for postgresql server user
+  ansible.builtin.set_fact:
+    pg_system_user_home: "{{ getent_passwd[pg_system_user][4] }}"
+
+- name: Create .bash_profile for postgresql system user
+  ansible.builtin.copy:
+    src: bash_profile
+    dest: "{{ pg_system_user_home }}/.bash_profile"
+    mode: "0664"
+    owner: "{{ pg_system_user }}"
+    group: "{{ pg_system_user }}"
+
+- name: Create .bashrc for postgresql system user
+  ansible.builtin.template:
+    src: bashrc.j2
+    dest: "{{ pg_system_user_home }}/.bashrc"
+    mode: "0664"
+    owner: "{{ pg_system_user }}"
+    group: "{{ pg_system_user }}"
+
+- name: Generate SSH key needed for passwordless ssh between nodes
+  ansible.builtin.user:
+    name: "{{ pg_system_user }}"
+    generate_ssh_key: true
+
+- name: Create repmgr configuration file
+  ansible.builtin.template:
+    src: repmgr.conf.j2
+    dest: /etc/repmgr.conf
+    mode: "0664"
+    owner: "{{ pg_system_user }}"
+    group: "{{ pg_system_user }}"
+
+- name: Ensure that Ansible managed hosts are in /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "{{ hostvars[host]['ansible_default_ipv4'].address }} {{ hostvars[host]['ansible_fqdn'] }} {{ hostvars[host]['ansible_hostname'] }}"
+    state: present
+    create: false
+  loop: "{{ groups[pg_cluster_group] }}"
+  loop_control:
+    loop_var: host
+  when: host != inventory_hostname

@@ -1,0 +1,10 @@
+node_id={{ pg_node_id }}
+node_name={{ ansible_fqdn }}
+conninfo='host={{ ansible_default_ipv4.address }} port={{ pg_port }} user={{ pg_repmgr_db_user }} dbname={{ pg_repmgr_db_name }}'
+use_replication_slots=1
+pg_bindir='/usr/lib/postgresql/{{ pg_version }}/bin'
+priority={{ pg_priority }}
+data_directory='{{ pg_datadir }}'
+service_start_command = 'sudo -n systemctl start postgresql'
+service_stop_command = 'sudo -n systemctl stop postgresql'
+service_restart_command = 'sudo -n systemctl restart postgresql'

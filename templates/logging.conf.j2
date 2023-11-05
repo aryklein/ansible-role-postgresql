@@ -1,0 +1,8 @@
+# {{ ansible_managed }}
+# CHANGES TO THIS FILE NEED A SERVER RELOAD TO BE APPLIED.
+# See: https://www.postgresql.org/docs/current/static/runtime-config-logging.html
+
+client_min_messages = {{ pg_client_min_log }}
+log_min_messages = {{ pg_min_log }}
+log_min_error_statement = {{ pg_statement_error_min_log }}
+log_min_duration_statement = {{ pg_statement_duration_min_log }}

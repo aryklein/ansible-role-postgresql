@@ -1,0 +1,23 @@
+# {{ ansible_managed }}
+[Unit]
+Description=PostgreSQL Database Server
+After=network.target
+
+[Service]
+TimeoutSec=120
+User={{ pg_system_user }}
+Group={{ pg_system_group }}
+Environment=PGDATA={{ pg_datadir }}
+ExecStart=/usr/lib/postgresql/{{ pg_version }}/bin/postgres -D ${PGDATA}
+ExecStop=/usr/lib/postgresql/{{ pg_version }}/bin/pg_ctl stop -m fast -D ${PGDATA}
+ExecReload=/usr/lib/postgresql/{{ pg_version }}/bin/pg_ctl reload -D ${PGDATA}
+
+OOMScoreAdjust=-200
+
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

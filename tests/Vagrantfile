@@ -1,0 +1,33 @@
+Vagrant.configure("2") do |config|
+  config.vagrant.plugins = "vagrant-libvirt"
+#
+  config.vm.define :test_vm_1 do |test_vm_1|
+    test_vm_1.vm.box = "generic/ubuntu2304"
+    test_vm_1.vm.hostname = "test-vm-1"
+    test_vm_1.vm.provider :libvirt do |libvirt|
+      libvirt.connect_via_ssh = false
+      libvirt.driver = "kvm"
+      libvirt.cpus = 1
+      libvirt.memory = 2048
+    end
+    test_vm_1.vm.provision "ansible" do |ansible|
+      ansible.limit = "all"
+      ansible.playbook="provision_vm.yaml"
+    end
+  end
+#
+  config.vm.define :test_vm_2 do |test_vm_2|
+    test_vm_2.vm.box = "generic/ubuntu2304"
+    test_vm_2.vm.hostname = "test-vm-2"
+    test_vm_2.vm.provider :libvirt do |libvirt|
+      libvirt.connect_via_ssh = false
+      libvirt.driver = "kvm"
+      libvirt.cpus = 1
+      libvirt.memory = 2048
+    end
+    test_vm_2.vm.provision "ansible" do |ansible|
+      ansible.limit = "all"
+      ansible.playbook="provision_vm.yaml"
+    end
+  end
+end

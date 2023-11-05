@@ -1,0 +1,14 @@
+---
+
+- name: If node id is not defined for the VM, automatically generate it
+  ansible.builtin.set_fact:
+    pg_node_id: "{{ 1000 | random(seed=inventory_hostname) }}"
+
+- name: Set default facts used through the role
+  ansible.builtin.set_fact:
+    pg_node_is_primary: false
+
+- name: Enable master tasks if host is master for cluster
+  ansible.builtin.set_fact:
+    pg_node_is_primary: true
+  when: ansible_hostname == pg_node_primary

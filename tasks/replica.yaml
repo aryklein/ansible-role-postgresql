@@ -1,0 +1,66 @@
+---
+
+- name: Check if the node is already a working replica
+  ansible.builtin.stat:
+    path: "{{ pg_datadir }}/standby.signal"
+  register: stat_result
+
+- name: Generate messages to compare command outputs
+  ansible.builtin.set_fact:
+    repmgr_clone_not_needed: "ERROR: target data directory appears to be a PostgreSQL data directory"
+    repmgr_clone_successful: "NOTICE: you can now start your PostgreSQL server"
+    repmgr_register_not_needed: "ERROR: node {{ pg_node_id }} is already registered"
+    repmgr_register_successful: "successfully registered"
+
+- name: Prepare node for replication
+  when: not stat_result.stat.exists
+  block:
+    - name: Stop PostgreSQL service if it is not a running replica
+      ansible.builtin.systemd:
+        name: postgresql
+        state: stopped
+
+    - name: Wipe postgresql data directory
+      ansible.builtin.file:
+        path: "{{ pg_datadir }}"
+        state: absent
+
+    - name: Clone database from primary
+      ansible.builtin.command: >
+        repmgr
+          --host {{ pg_clone_from | default(pg_node_primary) }}
+          --port {{ pg_port }}
+          --dbname {{ pg_repmgr_db_name }}
+          --user {{ pg_repmgr_db_user }}
+          --fast-checkpoint
+          --verbose
+          standby clone
+      become: true
+      become_user: "{{ pg_system_user }}"
+      register: command_result
+      failed_when:
+        - repmgr_clone_not_needed not in command_result.stderr
+        - repmgr_clone_successful not in command_result.stderr
+      changed_when:
+        - repmgr_clone_successful in command_result.stderr
+
+- name: Apply configuration changes
+  ansible.builtin.import_tasks: config_update.yaml
+
+- name: Start database server
+  ansible.builtin.systemd:
+    name: postgresql
+    state: started
+    daemon_reload: true
+    enabled: true
+
+- name: Register as replica with the primary
+  ansible.builtin.command: repmgr standby register
+  become: true
+  become_user: "{{ pg_system_user }}"
+  register: command_result
+  failed_when:
+    - repmgr_register_not_needed not in command_result.stderr
+    - repmgr_register_successful not in command_result.stderr
+  changed_when:
+    - repmgr_register_successful in command_result.stderr

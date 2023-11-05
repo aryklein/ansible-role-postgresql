@@ -1,0 +1,135 @@
+---
+
+# =============================================================================
+# SERVER VARIABLES
+# =============================================================================
+#
+# The postgresql version for the server
+pg_version: 16
+# Where to store data
+pg_datadir: /var/lib/postgresql/{{ pg_version }}/main
+# PostgreSQL system user home
+pg_system_user_home: /var/lib/postgresql
+# What port to use to listen for connections
+pg_port: 15432
+# Maximum number of connections on postgresql server
+pg_maxconn: 300
+# Type of WAL (usually 'hot_standby' or `logical`)
+pg_wal_level: "replica"
+# Number of replication slots
+pg_replication_slots: 10
+# Number of possible wal senders
+pg_wal_senders: 10
+# Number of worker processes (pglogical uses this)
+pg_worker_processes: 10
+# PostgreSQL system user
+pg_system_user: postgres
+# PostgreSQL system group
+pg_system_group: postgres
+# Default extensions to be installed
+pg_extensions:
+  16:
+    - pglogical
+    - repmgr
+    - repack
+    - pgaudit
+  15:
+    - pglogical
+    - repmgr
+    - repack
+    - pgaudit
+# Shared libraries to be loaded from the server at startup
+pg_shared_libraries:
+  - pglogical
+  - pg_stat_statements
+  - repmgr
+# Public IP (to be changed if the server has multiple interfaces)
+pg_public_addr: "{{ ansible_default_ipv4.address }}"
+# Initdb options (like for checksums)
+pg_initdb_options: "--data-checksums"
+# Logs to be sent back to client
+pg_client_min_log: NOTICE
+# Level of logs to be put in the server log
+pg_min_log: WARNING
+# Error level that cause a statement to be logged in the server log
+pg_statement_error_min_log: ERROR
+# Duration of a statement that cause the statement to be logged in the
+# server log (-1 -> never log statements).
+pg_statement_duration_min_log: -1
+# Set to true if the VM is running on an SSD drive (default)
+pg_has_ssd_drive: true
+# Set minimum work_mem value in MB (4)
+pg_min_work_mem: 4
+pg_memtotal_mb_1pc: "{{ ansible_memtotal_mb|int // 100 }}"
+pg_shared_buffers: " {{ pg_memtotal_mb_1pc|int * 25 }}"
+pg_work_mem: "{{ (ansible_memtotal_mb|int - pg_shared_buffers|int) // (pg_maxconn|int * 3) }}"
+
+# =============================================================================
+# CLUSTER VARIABLES
+# =============================================================================
+#
+# The cluster of which this server is part of
+pg_cluster_name: null
+# The priority for primary election of the server
+pg_priority: 100
+# Should the cluster automatically manage failover?
+pg_cluster_autofailover: false
+# Where should the script to manage autofailover kept?
+pg_cluster_autofailover_scripts_dir: /opt/db-scripts
+# Address/host of the primary server
+pg_node_primary: null
+# User used by repmgr on the database
+pg_repmgr_db_user: repmgr
+# Database used by rempgr
+pg_repmgr_db_name: "{{ pg_repmgr_db_user }}"
+# The password for the cluster administrator user (== postgres). If left empty,
+# this will not be set up remotely and it will be not possible to use it from
+# another box.
+pg_admin_password: "supersecret"
+
+
+# =============================================================================
+# BOUNCER VARIABLES
+# =============================================================================
+#
+# Install pgbouncer (default true)
+pgbouncer: true
+# Port the bouncer should listen to
+pg_bouncer_listen_port: 5432
+# The default pool mode for the bouncer
+pg_bouncer_pool_mode: transaction
+# The *database* user used by pgbouncer to authenticate database connections
+# Note: if you change this, you probably will need to change also the
+# userlist.txt file by using the make_userlist_txt.py script.
+pg_bouncer_auth_user: _bouncer
+# The password for the above user
+pg_bouncer_auth_password: "{{ vault_pg_bouncer_auth_password }}"
+# The administrator user the pgbouncer instance (it SHOULD NOT EXIST on the DB)
+pg_bouncer_admin_user: pgbouncer_admin
+# The password for the pgbouncer instance administrator user
+pg_bouncer_admin_password: "{{ vault_pg_bouncer_admin_password|default(None) }}"
+# The stat user for the pgbouncer instance (it SHOULD NOT EXIST on the DB)
+pg_bouncer_stats_user: pgbouncer_stats
+# The password for the pgbouncer instance administrator user
+pg_bouncer_stats_password: "{{ vault_pg_bouncer_stats_password|default(None) }}"
+# Enables SSL connections
+pg_bouncer_ssl_enabled: true
+# Number of connections to the database server. Each connection takes ~2kb of RAM.
+pg_bouncer_max_clients: 1000
+# Max size of the standard pool
+pg_bouncer_default_pool_size: 20
+# Max size of the reserve pool (a shared pool which can be used to temporarily
+# borrow connections if the pool is exhausted for a database)
+pg_bouncer_reserve_pool_size: 40
+# After how many seconds a server connection should be idle before it's dropped
+pg_bouncer_idle_server_conn_terminate: 60
+# Special rules for databases needing them
+pg_bouncer_custom_databases: []
+pg_bouncer_ignore_startup_parameters:
+  - extra_float_digits
+
+# =============================================================================
+# CLONE VARIABLES
+# =============================================================================
+clone_from_primary: true
+clone_from: "{{ pg_cluster_master_addr }}"

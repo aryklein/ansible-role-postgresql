@@ -1,0 +1,16 @@
+---
+- name: My Playbook
+  hosts: all
+  gather_facts: true
+  become: true
+
+  vars:
+    pg_cluster_group: "pg_test"
+    remote_tmp: "/tmp"
+    pg_version: 15
+
+
+  tasks:
+    - name: test role
+      import_role:
+        name: ../../ansible-role-postgresql

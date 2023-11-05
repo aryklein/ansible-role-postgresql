@@ -1,0 +1,55 @@
+---
+
+- name: Create pg_hba.conf
+  ansible.builtin.template:
+    src: pg_hba.conf.j2
+    dest: "{{ pg_datadir }}/pg_hba.conf"
+    mode: '0644'
+    owner: "{{ pg_system_user }}"
+    group: "{{ pg_system_group }}"
+  register: pg_hba_conf
+  notify: "reload postgresql"
+
+- name: Create postgresql.conf
+  ansible.builtin.template:
+    src: postgresql.conf.j2
+    dest: "{{ pg_datadir }}/postgresql.conf"
+    mode: '0644'
+    owner: "{{ pg_system_user }}"
+    group: "{{ pg_system_group }}"
+  register: postgresql_conf
+  notify: "restart postgresql"
+
+- name: Create conf.d directory
+  ansible.builtin.file:
+    path: "{{ pg_datadir }}/conf.d"
+    state: directory
+    owner: "{{ pg_system_user }}"
+    group: "{{ pg_system_group }}"
+    mode: '0700'
+
+- name: Create tuning configuration
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ pg_datadir }}/conf.d/{{ item }}"
+    mode: '0644'
+    owner: "{{ pg_system_user }}"
+    group: "{{ pg_system_group }}"
+  loop:
+    - tuning.conf
+  register: tuning_conf
+  notify: "restart postgresql"
+
+- name: Create logging configuration
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ pg_datadir }}/conf.d/{{ item }}"
+    mode: '0644'
+    owner: "{{ pg_system_user }}"
+    group: "{{ pg_system_group }}"
+  loop:
+    - logging.conf
+  notify: "reload postgresql"
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

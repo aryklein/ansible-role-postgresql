@@ -1,0 +1,89 @@
+---
+
+- name: Flush handlers
+  meta: flush_handlers
+
+- name: Generate messages to compare command outputs
+  ansible.builtin.set_fact:
+    initdb_not_needed: 'initdb: error: directory "{{ pg_datadir }}" exists but is not empty'
+    initdb_success: "Success. You can now start the database server using:"
+    repmgr_register_not_needed: "ERROR: this node is already registered"
+    repmgr_register_successful: "NOTICE: primary node record (id: {{ pg_node_id }}) registered"
+
+- name: Initialize DB
+  ansible.builtin.command: |
+    /usr/lib/postgresql/{{ pg_version }}/bin/initdb {{ pg_initdb_options }} -D {{ pg_datadir }}
+  register: initdb_result
+  failed_when:
+    - initdb_not_needed not in initdb_result.stderr
+    - initdb_success not in initdb_result.stdout
+  become: true
+  become_user: "{{ pg_system_user }}"
+  changed_when:
+    - initdb_success in initdb_result.stdout
+
+- name: Apply configuration changes
+  ansible.builtin.import_tasks: config_update.yaml
+
+- name: Start database server
+  ansible.builtin.systemd:
+    name: postgresql
+    state: started
+    daemon_reload: true
+    enabled: true
+
+- name: Ensure repmgr database is created
+  community.postgresql.postgresql_db:
+    name: "{{ pg_repmgr_db_name }}"
+    port: "{{ pg_port }}"
+
+- name: Setup cluster admin user (== postgres user)
+  community.postgresql.postgresql_user:
+    name: postgres
+    password: "{{ pg_admin_password }}"
+    port: "{{ pg_port }}"
+    encrypted: true
+  become: true
+  become_user: "{{ pg_system_user }}"
+
+- name: Setup repmgr user privileges
+  community.postgresql.postgresql_user:
+    name: "{{ pg_repmgr_db_user }}"
+    role_attr_flags: "SUPERUSER,NOCREATEDB"
+    port: "{{ pg_port }}"
+  become: true
+  become_user: "{{ pg_system_user }}"
+
+- name: Revoke CONNECT from PUBLIC on repmgr database
+  community.postgresql.postgresql_privs:
+    db: "{{ pg_repmgr_db_name }}"
+    role: PUBLIC
+    type: database
+    privs: CONNECT
+    state: absent
+    port: "{{ pg_port }}"
+  become: true
+  become_user: "{{ pg_system_user }}"
+  changed_when: false
+
+- name: Ensure repmgr user has access to repmgr database
+  community.postgresql.postgresql_privs:
+    db: "{{ pg_repmgr_db_name }}"
+    role: "{{ pg_repmgr_db_user }}"
+    type: database
+    privs: ALL
+    state: present
+    port: "{{ pg_port }}"
+  become: true
+  become_user: "{{ pg_system_user }}"
+
+- name: Register master node
+  ansible.builtin.command: repmgr primary register
+  become: true
+  become_user: "{{ pg_system_user }}"
+  register: command_result
+  failed_when:
+    - repmgr_register_not_needed not in command_result.stderr
+    - (repmgr_register_successful|lower) not in (command_result.stderr|lower)
+  changed_when:
+    - (repmgr_register_successful|lower) in (command_result.stderr|lower)

@@ -1,0 +1,12 @@
+---
+- name: Basic VM provisioning
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: add public SSH key to the vagrant user
+      ansible.posix.authorized_key:
+        user: vagrant
+        state: present
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"

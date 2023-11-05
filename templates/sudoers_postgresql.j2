@@ -1,0 +1,6 @@
+Defaults:{{ pg_system_user }} !requiretty
+{{ pg_system_user }} ALL = NOPASSWD: /bin/systemctl stop postgresql, \
+       /bin/systemctl start postgresql, \
+       /bin/systemctl restart postgresql, \
+       /bin/systemctl status postgresql, \
+       /bin/systemctl reload postgresql

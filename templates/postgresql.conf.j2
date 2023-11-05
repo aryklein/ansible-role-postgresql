@@ -1,0 +1,20 @@
+# {{ ansible_managed }}
+# CHANGES TO THIS FILE NEED A SERVER RESTART TO BE APPLIED.
+
+listen_addresses = '*'
+port = {{ pg_port }}
+max_connections = {{ pg_maxconn }}
+superuser_reserved_connections = 5
+max_wal_senders = {{ pg_wal_senders }}
+max_worker_processes = {{ pg_worker_processes }}
+wal_log_hints = on
+wal_level = {{ pg_wal_level }}
+max_replication_slots = {{ pg_replication_slots }}
+hot_standby = on
+hot_standby_feedback = on
+shared_preload_libraries = '{{ pg_shared_libraries|join(', ') }}'
+authentication_timeout = 30s
+{% if pg_wal_keep_segments is defined %}
+wal_keep_segments = {{ pg_wal_keep_segments }}
+{% endif %}
+include_dir = 'conf.d'

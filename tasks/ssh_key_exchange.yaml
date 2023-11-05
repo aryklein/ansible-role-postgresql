@@ -1,0 +1,51 @@
+---
+
+- name: Check if SSH public key exists
+  ansible.builtin.stat:
+    path: "{{ pg_system_user_home }}/.ssh/id_rsa.pub"
+  register: key_check
+
+- name: Ensure SSH key pair is present only if it doesn't exist
+  community.crypto.openssh_keypair:
+    path: "{{ pg_system_user_home }}/.ssh/id_rsa"
+    type: rsa
+    size: 2048
+    owner: "{{ pg_system_user }}"
+    group: "{{ pg_system_group }}"
+    comment: "ansible-generated on {{ ansible_fqdn }}"
+  when: not key_check.stat.exists
+
+- name: Fetch all public ssh keys
+  ansible.builtin.slurp:
+    src: "{{ pg_system_user_home }}/.ssh/id_rsa.pub"
+  register: ssh_key
+
+- name: Deploy keys on all nodes
+  ansible.posix.authorized_key:
+    user: "{{ pg_system_user }}"
+    key: "{{ item[0] }}"
+  delegate_to: "{{ item[1] }}"
+  with_nested:
+    - "{{ ssh_key['content'] | b64decode }}"
+    - "{{ groups[pg_cluster_group] }}"
+
+- name: Get fingerprints from all nodes and add it to the known_hosts file
+  ansible.builtin.shell: >
+    sleep {{ 15 | random }} &&
+    ssh-keyscan -4 -t rsa
+    {% for host in groups[pg_cluster_group] %}
+    {{ host }}
+    {{ hostvars[host]['ansible_default_ipv4'].address }}
+    {% endfor %}
+    2>/dev/null
+    | sort
+  changed_when: false
+  register: ssh_fingerprints
+
+- name: Save discovered fingerprints
+  ansible.builtin.copy:
+    content: "{{ ssh_fingerprints.stdout }}"
+    dest: "{{ pg_system_user_home }}/.ssh/known_hosts"
+    mode: 0600
+    owner: "{{ pg_system_user }}"
+    group: "{{ pg_system_group }}"

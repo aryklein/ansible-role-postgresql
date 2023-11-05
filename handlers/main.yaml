@@ -1,0 +1,27 @@
+---
+
+- name: Systemd daemon reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+  listen: "daemon reload"
+
+- name: Restart postgresql
+  ansible.builtin.systemd:
+    name: postgresql
+    daemon_reload: true
+    state: restarted
+  listen: "restart postgresql"
+
+- name: Reload postgresql
+  ansible.builtin.systemd:
+    name: postgresql
+    daemon_reload: true
+    state: reloaded
+  listen: "reload postgresql"
+
+- name: Reload bouncer
+  ansible.builtin.systemd:
+    name: pgbouncer
+    state: reloaded
+    daemon_reload: true
+  listen: "reload pgbouncer"
