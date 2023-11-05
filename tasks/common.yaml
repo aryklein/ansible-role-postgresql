@@ -109,7 +109,10 @@
 - name: Ensure that Ansible managed hosts are in /etc/hosts
   ansible.builtin.lineinfile:
     path: /etc/hosts
-    line: "{{ hostvars[host]['ansible_default_ipv4'].address }} {{ hostvars[host]['ansible_fqdn'] }} {{ hostvars[host]['ansible_hostname'] }}"
+    line: >
+      {{ hostvars[host]['ansible_default_ipv4'].address }}
+      {{ hostvars[host]['ansible_fqdn'] }}
+      {{ hostvars[host]['ansible_hostname'] }}
     state: present
     create: false
   loop: "{{ groups[pg_cluster_group] }}"
