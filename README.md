@@ -1,7 +1,6 @@
 # Ansible Role for PostgreSQL Cluster Deployment
 
-[![Lint](https://github.com/aryklein/ansible-role-postgresql/workflows/Lint/badge.svg)]
-(https://github.com/aryklein/ansible-role-postgresql/actions?query=workflow%3ALint)
+[![Lint](https://github.com/aryklein/ansible-role-postgresql/workflows/Lint/badge.svg)](https://github.com/aryklein/ansible-role-postgresql/actions?query=workflow%3ALint)
 
 This Ansible role is designed to streamline the deployment of a PostgreSQL
 cluster. It leverages `repmgr` for replication and cluster management, focusing
