@@ -6,9 +6,7 @@
 
   vars:
     pg_cluster_group: "pg_test"
-    remote_tmp: "/tmp"
     pg_version: 15
-
 
   tasks:
     - name: test role
